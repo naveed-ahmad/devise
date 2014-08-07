@@ -256,7 +256,7 @@ module Devise
           attributes = attributes.slice(*required_attributes)
           attributes.delete_if { |key, value| value.blank? }
 
-          if attributes.size == required_attributes.size
+          if attributes.present?
             record = find_first_by_auth_conditions(attributes)
           end
 
