@@ -1,7 +1,30 @@
-### Unreleased
+### 3.3.0 (unreleased)
 
-* enchancements
+* enhancements
+  * Support multiple warden configuration blocks on devise configuration. (by @rossta)
+  * Previously, when a user signed out, all remember me tokens for all sessions/browsers would be
+    invalidated, and this behavior could not be changed. This behavior is now configurable via
+    `expire_all_remember_me_on_sign_out`. The default continues to be true. (by @laurocaetano)
+  * Default email messages was updated with grammar fixes, check the diff on
+    #2906 for the updated copy (by @p-originate)
+  * Allow a resource to be found based on its encrypted password token (by @karlentwistle)
+  * Adds `devise_group`, a macro to define controller helpers for multiple mappings at once. (by @dropletzz)
+
+* bug fix
+  * Check if there is a signed in user before executing the `SessionsController#destroy`.
+  * `SessionsController#destroy` no longer yields the `resource` to receiving block,
+    since the resource isn't loaded in the action. If you need access to the current
+    resource when overring the action use the scope helper (like `current_user`) before
+    calling `super`
+  * Serialize the `last_request_at` entry as an Integer
+  * Ensure registration controller block yields happen on failure in addition to success (by @dpehrson)
+  * Only valid paths will be stored for redirections (by @parallel588)
+
+### 3.2.4
+
+* enhancements
   * `bcrypt` dependency updated due https://github.com/codahale/bcrypt-ruby/pull/86.
+  * View generator now can generate specific views with the `-v` flag, like `rails g devise:views -v sessions` (by @kayline)
 
 ### 3.2.3
 
@@ -172,6 +195,16 @@ Security announcement: http://blog.plataformatec.com.br/2013/01/security-announc
   * Properly assign resource on `sign_in` related action (by @adammcnamara)
   * `update_with_password` doesn't change encrypted password when it is invalid (by @nashby)
   * Properly handle namespaced models on Active Record generator (by @nashby)
+
+### 2.1.4
+
+* bugfix
+  * Do not confirm account after reset password
+
+### 2.1.3
+
+* bugfix
+  * Require string conversion for all values
 
 ### 2.1.2
 

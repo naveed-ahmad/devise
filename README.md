@@ -27,7 +27,7 @@ It's composed of 10 modules:
 * [Validatable](http://rubydoc.info/github/plataformatec/devise/master/Devise/Models/Validatable): provides validations of email and password. It's optional and can be customized, so you're able to define your own validations.
 * [Lockable](http://rubydoc.info/github/plataformatec/devise/master/Devise/Models/Lockable): locks an account after a specified number of failed sign-in attempts. Can unlock via email or after a specified time period.
 
-Devise is guaranteed to be thread-safe on YARV. Thread-safety support on JRuby is on progress.
+Devise is guaranteed to be thread-safe on YARV. Thread-safety support on JRuby is in progress.
 
 ## Information
 
@@ -83,7 +83,7 @@ You will usually want to write tests for your changes.  To run the test suite, g
 
 If you are building your first Rails application, we recommend you to *not* use Devise. Devise requires a good understanding of the Rails Framework. In such cases, we advise you to start a simple authentication system from scratch, today we have two resources:
 
-* Michael Hartl's online book: http://railstutorial.org/chapters/modeling-and-viewing-users-two#top
+* Michael Hartl's online book: http://www.railstutorial.org/book/demo_app#sec-modeling_demo_users
 * Ryan Bates' Railscast: http://railscasts.com/episodes/250-authentication-from-scratch
 
 Once you have solidified your understanding of Rails and authentication mechanisms, we assure you Devise will be very pleasant to work with. :)
@@ -110,23 +110,27 @@ The generator will install an initializer which describes ALL Devise's configura
 rails generate devise MODEL
 ```
 
-Replace MODEL by the class name used for the applications users, it's frequently `User` but could also be `Admin`. This will create a model (if one does not exist) and configure it with default Devise modules. Next, you'll usually run `rake db:migrate` as the generator will have created a migration file (if your ORM supports them). This generator also configures your `config/routes.rb` file to point to the Devise controller.
+Replace MODEL with the class name used for the application’s users (it’s frequently `User` but could also be `Admin`). This will create a model (if one does not exist) and configure it with default Devise modules. The generator also configures your `config/routes.rb` file to point to the Devise controller.
 
-Next, you need to set up the default url options for the Devise mailer in each environment. Here is a possible configuration for `config/environments/development.rb`:
+Next, check the MODEL for any additional configuration options you might want to add, such as confirmable or lockable. If you add an option, be sure to inspect the migration file (created by the generator if your ORM supports them) and uncomment the appropriate section.  For example, if you add the confirmable option in the model, you'll need to uncomment the Confirmable section in the migration. Then run `rake db:migrate`
+
+Next, you need to set up the default URL options for the Devise mailer in each environment. Here is a possible configuration for `config/environments/development.rb`:
 
 ```ruby
-config.action_mailer.default_url_options = { host: 'localhost:3000' }
+config.action_mailer.default_url_options = { host: 'localhost', port: 3000 }
 ```
 
 You should restart your application after changing Devise's configuration options. Otherwise you'll run into strange errors like users being unable to login and route helpers being undefined.
 
 ### Controller filters and helpers
 
-Devise will create some helpers to use inside your controllers and views. To set up a controller with user authentication, just add this before_filter:
+Devise will create some helpers to use inside your controllers and views. To set up a controller with user authentication, just add this before_action (assuming your devise model is 'User'):
 
 ```ruby
-before_filter :authenticate_user!
+before_action :authenticate_user!
 ```
+
+If your devise model is something other than User, replace "_user" with "_yourmodel". The same logic applies to the instructions below.
 
 To verify if a user is signed in, use the following helper:
 
@@ -157,7 +161,7 @@ You can also override `after_sign_in_path_for` and `after_sign_out_path_for` to 
 Notice that if your Devise model is called `Member` instead of `User`, for example, then the helpers available are:
 
 ```ruby
-before_filter :authenticate_member!
+before_action :authenticate_member!
 
 member_signed_in?
 
@@ -190,7 +194,7 @@ In case you want to permit additional parameters (the lazy way™) you can do wi
 
 ```ruby
 class ApplicationController < ActionController::Base
-  before_filter :configure_permitted_parameters, if: :devise_controller?
+  before_action :configure_permitted_parameters, if: :devise_controller?
 
   protected
 
@@ -200,7 +204,7 @@ class ApplicationController < ActionController::Base
 end
 ```
 
-The above works for any additional fields where the parameters are simple scalar types. If you have nested attributes (say you're using `accepts_nested_parameters_for`), then you will need to tell devise about those nestings and types. Devise allows you to completely change Devise defaults or invoke custom behaviour by passing a block:
+The above works for any additional fields where the parameters are simple scalar types. If you have nested attributes (say you're using `accepts_nested_attributes_for`), then you will need to tell devise about those nestings and types. Devise allows you to completely change Devise defaults or invoke custom behaviour by passing a block:
 
 To permit simple scalar values for username and email, use this
 
@@ -214,7 +218,7 @@ If you have some checkboxes that express the roles a user may take on registrati
 
 ```ruby
 def configure_permitted_parameters
-  devise_parameter_sanitizer.for(:sign_up) { |u| u.permit(roles: [], :email, :password, :password_confirmation) }
+  devise_parameter_sanitizer.for(:sign_up) { |u| u.permit({ roles: [] }, :email, :password, :password_confirmation) }
 end
 ```
 For the list of permitted scalars, and how to declare permitted keys in nested hashes and arrays, see
@@ -267,6 +271,13 @@ After doing so, you will be able to have views based on the role like `users/ses
 rails generate devise:views users
 ```
 
+If you want to generate only a few set of views, like the ones for the `registrable` and `confirmable` module,
+you can pass a list of modules to the generator with the `-v` flag.
+
+```console
+rails generate devise:views -v registrations confirmations
+```
+
 ### Configuring controllers
 
 If the customization at the views level is not enough, you can customize each controller by following these steps:
@@ -278,7 +289,7 @@ If the customization at the views level is not enough, you can customize each co
     end
     ```
 
-    Note that in the above example, the controller needs to be created in the `app/controller/admins/` directory.
+    Note that in the above example, the controller needs to be created in the `app/controllers/admins/` directory.
 
 2. Tell the router to use this controller:
 
@@ -376,6 +387,8 @@ Take a look at our locale file to check all available messages. You may also be 
 
 https://github.com/plataformatec/devise/wiki/I18n
 
+Caution: Devise Controllers inherit from ApplicationController. If your app uses multiple locales, you should be sure to set I18n.locale in ApplicationController
+
 ### Test helpers
 
 Devise includes some test helpers for functional specs. In order to use them, you need to include Devise in your functional tests by adding the following to the bottom of your `test/test_helper.rb` file:
@@ -386,7 +399,7 @@ class ActionController::TestCase
 end
 ```
 
-If you're using RSpec, you can put the following inside a file named `spec/support/devise.rb`:
+If you're using RSpec, you can put the following inside a file named `spec/support/devise.rb` or in your `spec/spec_helper.rb`:
 
 ```ruby
 RSpec.configure do |config|
@@ -404,11 +417,11 @@ sign_out :user         # sign_out(scope)
 sign_out @user         # sign_out(resource)
 ```
 
-There are two things that is important to keep in mind:
+There are two things that are important to keep in mind:
 
 1. These helpers are not going to work for integration tests driven by Capybara or Webrat. They are meant to be used with functional tests only. Instead, fill in the form or explicitly set the user in session;
 
-2. If you are testing Devise internal controllers or a controller that inherits from Devise's, you need to tell Devise which mapping should be used before a request. This is necessary because Devise gets this information from router, but since functional tests do not pass through the router, it needs to be told explicitly. For example, if you are testing the user scope, simply do:
+2. If you are testing Devise internal controllers or a controller that inherits from Devise's, you need to tell Devise which mapping should be used before a request. This is necessary because Devise gets this information from the router, but since functional tests do not pass through the router, it needs to be told explicitly. For example, if you are testing the user scope, simply do:
 
     ```ruby
     @request.env["devise.mapping"] = Devise.mappings[:user]
@@ -456,7 +469,7 @@ admin_session
 
 Alternatively, you can simply run the Devise generator.
 
-Keep in mind that those models will have completely different routes. They **do not** and **cannot** share the same controller for sign in, sign out and so on. In case you want to have different roles sharing the same actions, we recommend you to use a role-based approach, by either providing a role column or using [CanCan](https://github.com/ryanb/cancan).
+Keep in mind that those models will have completely different routes. They **do not** and **cannot** share the same controller for sign in, sign out and so on. In case you want to have different roles sharing the same actions, we recommend you to use a role-based approach, by either providing a role column or using a dedicated gem for authorization.
 
 ### Other ORMs
 
